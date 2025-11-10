@@ -1,0 +1,12 @@
+# Quantum Cryptography
+kyber-py>=1.0.0
+dilithium-py>=1.0.0
+
+# Symmetric Encryption
+pycryptodome>=3.18.0
+
+# Database (optional)
+neon-serverless>=0.2.0
+
+# Logging & Utilities
+python-dotenv>=1.0.0
