@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Lock, Shield, ChevronRight } from "lucide-react"
+import { Lock, Shield, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react"
 
 type Step = "receiver" | "account" | "amount" | "confirm"
 
@@ -10,51 +10,42 @@ export default function QuantumBankingForm() {
   const [receiverName, setReceiverName] = useState("")
   const [accountNumber, setAccountNumber] = useState("")
   const [amount, setAmount] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [bankName, setBankName] = useState("national")
+  const [generalError, setGeneralError] = useState("")
   const [success, setSuccess] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  const steps: { key: Step; label: string; icon: string }[] = [
-    { key: "receiver", label: "Receiver Info", icon: "👤" },
-    { key: "account", label: "Account", icon: "🏦" },
-    { key: "amount", label: "Amount", icon: "💰" },
-    { key: "confirm", label: "Confirm", icon: "✓" },
+  const steps: { key: Step; label: string }[] = [
+    { key: "receiver", label: "Receiver Info" },
+    { key: "account", label: "Account" },
+    { key: "amount", label: "Amount" },
+    { key: "confirm", label: "Confirm" },
   ]
 
   const stepIndex = steps.findIndex((s) => s.key === currentStep)
 
   const handleNext = async () => {
-    setError("")
+    setGeneralError("")
 
     if (currentStep === "receiver" && !receiverName.trim()) {
-      setError("Please enter receiver name")
+      setGeneralError("Please enter receiver name")
       return
     }
     if (currentStep === "account" && !accountNumber.trim()) {
-      setError("Please enter account number")
+      setGeneralError("Please enter account number")
       return
     }
     if (currentStep === "amount" && !amount.trim()) {
-      setError("Please enter amount")
+      setGeneralError("Please enter amount")
       return
     }
 
     if (currentStep === "confirm") {
-      setLoading(true)
+      setSubmitting(true)
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
-
-        console.log("[v0] Starting transfer with:", {
-          receiver_name: receiverName,
-          receiver_account: accountNumber,
-          amount: Number.parseFloat(amount),
-        })
-
-        const response = await fetch(`${API_URL}/transactions/transfer`, {
+        const response = await fetch("/api/transactions/transfer", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             receiver_name: receiverName,
             receiver_account: accountNumber,
@@ -63,29 +54,19 @@ export default function QuantumBankingForm() {
           }),
         })
 
-        const responseData = await response.json()
-        console.log("[v0] API Response:", responseData)
-
+        const data = await response.json()
         if (!response.ok) {
-          throw new Error(responseData.detail || "Transfer failed")
+          throw new Error(data.detail || "Transfer failed")
         }
 
-        setSuccess(`Transaction ID: ${responseData.id} - Transfer initiated successfully!`)
-
-        // Reset form
+        setSuccess(`Transaction ID: ${data.id} - Transfer initiated successfully!`)
         setTimeout(() => {
-          setReceiverName("")
-          setAccountNumber("")
-          setAmount("")
-          setCurrentStep("receiver")
-          setSuccess("")
+          handleCancel()
         }, 3000)
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Transfer failed"
-        console.log("[v0] Error occurred:", errorMessage)
-        setError(errorMessage)
+        setGeneralError(err instanceof Error ? err.message : "Transfer failed")
       } finally {
-        setLoading(false)
+        setSubmitting(false)
       }
     } else {
       const nextStepIndex = stepIndex + 1
@@ -100,15 +81,14 @@ export default function QuantumBankingForm() {
     setReceiverName("")
     setAccountNumber("")
     setAmount("")
-    setError("")
+    setBankName("national")
+    setGeneralError("")
     setSuccess("")
   }
 
   return (
     <div className="w-full max-w-2xl">
-      {/* Main Card */}
       <div className="bg-gradient-to-br from-[#2d1b4e] to-[#1f1540] border border-[#4a3f7e] rounded-3xl p-8 shadow-2xl">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Lock className="w-8 h-8 text-cyan-400" />
@@ -117,7 +97,6 @@ export default function QuantumBankingForm() {
           <p className="text-gray-400 text-sm">Secure Money Transfer System</p>
         </div>
 
-        {/* Security Badge */}
         <div className="flex justify-center mb-8">
           <div className="border border-cyan-400 bg-cyan-400/5 rounded-full px-4 py-2 flex items-center gap-2">
             <Shield className="w-4 h-4 text-cyan-400" />
@@ -125,13 +104,11 @@ export default function QuantumBankingForm() {
           </div>
         </div>
 
-        {/* Step Indicators */}
-        <div className="flex justify-between mb-10">
+        <div className="flex justify-between items-center mb-10">
           {steps.map((step, index) => (
-            <div key={step.key} className="flex flex-col items-center gap-2 flex-1">
-              {/* Circle Indicator */}
+            <div key={step.key} className="flex items-center gap-0 flex-1">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                   index < stepIndex
                     ? "bg-cyan-400 text-white"
                     : index === stepIndex
@@ -141,7 +118,24 @@ export default function QuantumBankingForm() {
               >
                 {index < stepIndex ? "✓" : index + 1}
               </div>
-              {/* Label */}
+
+              {index < steps.length - 1 && (
+                <div
+                  className={`flex-1 h-1 mx-2 transition-all duration-300 ${
+                    index < stepIndex ? "bg-red-500" : "bg-gray-500/20"
+                  }`}
+                />
+              )}
+
+              {index === steps.length - 1 && <div className="flex-1" />}
+            </div>
+          ))}
+        </div>
+
+        {/* Display step label */}
+        <div className="flex justify-between mb-10">
+          {steps.map((step, index) => (
+            <div key={`label-${step.key}`} className="flex-1 text-center">
               <span
                 className={`text-xs font-medium transition-colors ${
                   index <= stepIndex ? "text-cyan-400" : "text-gray-400"
@@ -153,7 +147,6 @@ export default function QuantumBankingForm() {
           ))}
         </div>
 
-        {/* Security Info Box */}
         <div className="bg-teal-500/10 border border-teal-500/30 rounded-lg p-4 mb-8">
           <div className="flex items-start gap-3">
             <Lock className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
@@ -167,17 +160,21 @@ export default function QuantumBankingForm() {
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-6 text-red-400 text-sm">{error}</div>
+        {generalError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-6 text-red-400 text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {generalError}
+          </div>
         )}
 
         {success && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-6 text-green-400 text-sm">
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-6 text-green-400 text-sm flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             {success}
           </div>
         )}
 
-        {/* Form Content */}
+        {/* Receiver Info Step */}
         {currentStep === "receiver" && (
           <div className="space-y-6">
             <div>
@@ -191,7 +188,6 @@ export default function QuantumBankingForm() {
               />
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-4">
               <button
                 onClick={handleCancel}
@@ -201,8 +197,7 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={!receiverName.trim()}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -214,15 +209,29 @@ export default function QuantumBankingForm() {
         {/* Account Step */}
         {currentStep === "account" && (
           <div className="space-y-6">
-            <div>
-              <label className="block text-gray-300 text-sm font-medium mb-3">Enter Receiver Account Number</label>
-              <input
-                type="text"
-                placeholder="1234567890"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-3">Select Bank</label>
+                <select
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                >
+                  <option value="national">National Bank</option>
+                  <option value="himalayan">Himalayan Bank</option>
+                  <option value="nabil">Nabil Bank</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-3">Account Number</label>
+                <input
+                  type="text"
+                  placeholder="1234567890"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                />
+              </div>
             </div>
 
             <div className="flex gap-4">
@@ -234,8 +243,7 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={!accountNumber.trim()}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -248,7 +256,7 @@ export default function QuantumBankingForm() {
         {currentStep === "amount" && (
           <div className="space-y-6">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-3">Enter Transfer Amount</label>
+              <label className="block text-gray-300 text-sm font-medium mb-3">Enter Transfer Amount (NPR)</label>
               <input
                 type="number"
                 placeholder="0.00"
@@ -267,8 +275,7 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={!amount.trim()}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -291,7 +298,13 @@ export default function QuantumBankingForm() {
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-gray-400">Amount:</span>
-                <span className="text-cyan-400 font-bold text-lg">${amount}</span>
+                <span className="text-cyan-400 font-bold text-lg">
+                  NPR{" "}
+                  {Number.parseFloat(amount).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
             </div>
 
@@ -304,18 +317,17 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={loading}
+                disabled={submitting}
                 className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? "Processing..." : "CONFIRM"}
-                {!loading && <ChevronRight className="w-4 h-4" />}
+                {submitting ? "Processing..." : "CONFIRM"}
+                {!submitting && <ChevronRight className="w-4 h-4" />}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer Note */}
       <div className="text-center mt-6 text-gray-500 text-xs">
         <p>Your transactions are protected by post-quantum cryptography</p>
       </div>
