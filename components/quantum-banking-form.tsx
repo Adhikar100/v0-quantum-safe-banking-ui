@@ -12,6 +12,7 @@ export default function QuantumBankingForm() {
   const [amount, setAmount] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const steps: { key: Step; label: string; icon: string }[] = [
     { key: "receiver", label: "Receiver Info", icon: "👤" },
@@ -41,26 +42,48 @@ export default function QuantumBankingForm() {
     if (currentStep === "confirm") {
       setLoading(true)
       try {
-        const response = await fetch("http://localhost:8000/api/transactions/transfer", {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
+
+        console.log("[v0] Starting transfer with:", {
+          receiver_name: receiverName,
+          receiver_account: accountNumber,
+          amount: Number.parseFloat(amount),
+        })
+
+        const response = await fetch(`${API_URL}/transactions/transfer`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             receiver_name: receiverName,
             receiver_account: accountNumber,
             amount: Number.parseFloat(amount),
+            description: "Quantum-safe transfer",
           }),
         })
 
-        if (!response.ok) throw new Error("Transfer failed")
+        const responseData = await response.json()
+        console.log("[v0] API Response:", responseData)
 
-        console.log("[v0] Transaction completed successfully")
+        if (!response.ok) {
+          throw new Error(responseData.detail || "Transfer failed")
+        }
+
+        setSuccess(`Transaction ID: ${responseData.id} - Transfer initiated successfully!`)
+
         // Reset form
-        setReceiverName("")
-        setAccountNumber("")
-        setAmount("")
-        setCurrentStep("receiver")
+        setTimeout(() => {
+          setReceiverName("")
+          setAccountNumber("")
+          setAmount("")
+          setCurrentStep("receiver")
+          setSuccess("")
+        }, 3000)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Transfer failed")
+        const errorMessage = err instanceof Error ? err.message : "Transfer failed"
+        console.log("[v0] Error occurred:", errorMessage)
+        setError(errorMessage)
       } finally {
         setLoading(false)
       }
@@ -78,6 +101,7 @@ export default function QuantumBankingForm() {
     setAccountNumber("")
     setAmount("")
     setError("")
+    setSuccess("")
   }
 
   return (
@@ -143,9 +167,14 @@ export default function QuantumBankingForm() {
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-6 text-red-400 text-sm">{error}</div>
+        )}
+
+        {success && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-6 text-green-400 text-sm">
+            {success}
+          </div>
         )}
 
         {/* Form Content */}

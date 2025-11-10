@@ -7,6 +7,7 @@ from sqlalchemy import desc, and_
 from datetime import datetime, timedelta
 from typing import List, Optional
 import logging
+import uuid
 
 from database_optimized import get_db_session
 from models_optimized import Transaction, User, AuditLog
@@ -21,37 +22,107 @@ cache_manager = get_cache_manager()
 encryptor = get_transaction_encryptor()
 quantum_engine = get_quantum_engine()
 
+@router.get("/demo/sender")
+async def get_demo_sender(db: Session = Depends(get_db_session)):
+    """Get or create demo sender user for testing"""
+    try:
+        # Check if demo user exists
+        demo_user = db.query(User).filter(User.email == "demo@quantumbank.io").first()
+        
+        if not demo_user:
+            # Create demo user
+            demo_user = User(
+                email="demo@quantumbank.io",
+                username="demouser",
+                account_number="1000000000",
+                balance=10000.0,
+                kyber_public_key="demo_kyber_key",
+                kyber_private_key="demo_kyber_private",
+                dilithium_public_key="demo_dilithium_key",
+                dilithium_private_key="demo_dilithium_private"
+            )
+            db.add(demo_user)
+            db.commit()
+            db.refresh(demo_user)
+            logger.info(f"Created demo user with ID {demo_user.id}")
+        
+        return {
+            "id": demo_user.id,
+            "email": demo_user.email,
+            "username": demo_user.username,
+            "account_number": demo_user.account_number,
+            "balance": demo_user.balance
+        }
+    except Exception as e:
+        logger.error(f"Demo sender creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create demo sender")
+
+async def get_or_create_receiver(account_number: str, receiver_name: str, db: Session):
+    """Get existing receiver or create new one"""
+    receiver = db.query(User).filter(User.account_number == account_number).first()
+    
+    if not receiver:
+        # Create new receiver
+        receiver = User(
+            email=f"{account_number}@quantumbank.io",
+            username=receiver_name.lower().replace(" ", "_"),
+            account_number=account_number,
+            balance=0.0,
+            kyber_public_key="receiver_kyber_key",
+            kyber_private_key="receiver_kyber_private",
+            dilithium_public_key="receiver_dilithium_key",
+            dilithium_private_key="receiver_dilithium_private"
+        )
+        db.add(receiver)
+        db.commit()
+        db.refresh(receiver)
+        logger.info(f"Created receiver user {account_number}")
+    
+    return receiver
+
 @router.post("/transfer", response_model=TransactionResponse)
 async def create_transfer(
     transfer: TransferRequest,
-    sender_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db_session)
 ):
     """
     Create a quantum-safe encrypted transaction
     Implements Kyber for encryption and Dilithium for signing
+    Simplified to accept transfer data and auto-create sender/receiver
     """
     try:
-        # Validate sender and receiver
-        sender = db.query(User).filter(User.id == sender_id).first()
+        sender = db.query(User).filter(User.email == "demo@quantumbank.io").first()
         if not sender:
-            raise HTTPException(status_code=404, detail="Sender not found")
+            sender = User(
+                email="demo@quantumbank.io",
+                username="demouser",
+                account_number="1000000000",
+                balance=10000.0,
+                kyber_public_key="demo_kyber_key",
+                kyber_private_key="demo_kyber_private",
+                dilithium_public_key="demo_dilithium_key",
+                dilithium_private_key="demo_dilithium_private"
+            )
+            db.add(sender)
+            db.commit()
+            db.refresh(sender)
         
-        receiver = db.query(User).filter(User.account_number == transfer.receiver_account).first()
-        if not receiver:
-            raise HTTPException(status_code=404, detail="Receiver not found")
-        
-        # Validate balance
         if sender.balance < transfer.amount:
             raise HTTPException(status_code=400, detail="Insufficient balance")
         
+        receiver = await get_or_create_receiver(
+            transfer.receiver_account,
+            transfer.receiver_name,
+            db
+        )
+        
         # Encrypt transaction data
         transaction_data = {
-            "sender_id": sender_id,
+            "sender_id": sender.id,
             "receiver_id": receiver.id,
             "amount": transfer.amount,
-            "description": transfer.description,
+            "description": transfer.description or "",
             "timestamp": datetime.utcnow().isoformat()
         }
         
@@ -62,7 +133,7 @@ async def create_transfer(
         
         # Create transaction record
         tx = Transaction(
-            sender_id=sender_id,
+            sender_id=sender.id,
             receiver_id=receiver.id,
             amount=transfer.amount,
             status="pending",
@@ -77,21 +148,21 @@ async def create_transfer(
         
         # Log audit
         audit = AuditLog(
-            user_id=sender_id,
+            user_id=sender.id,
             action="TRANSFER_INITIATED",
-            details=f"Transfer to {receiver.account_number} for {transfer.amount}"
+            details=f"Transfer to {receiver.account_number} for ${transfer.amount}"
         )
         db.add(audit)
         db.commit()
         
         # Invalidate cache
-        background_tasks.add_task(cache_manager.invalidate_user_cache, sender_id)
+        background_tasks.add_task(cache_manager.invalidate_user_cache, sender.id)
         
         logger.info(f"Transaction {tx.id} created successfully")
         
         return TransactionResponse(
             id=tx.id,
-            sender_id=sender_id,
+            sender_id=sender.id,
             receiver_id=receiver.id,
             amount=transfer.amount,
             status="pending",
@@ -104,7 +175,7 @@ async def create_transfer(
     except Exception as e:
         logger.error(f"Transaction creation failed: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Transaction failed")
+        raise HTTPException(status_code=500, detail=f"Transaction failed: {str(e)}")
 
 @router.get("/history/{user_id}")
 async def get_transaction_history(
@@ -226,4 +297,4 @@ async def confirm_transaction(
     except Exception as e:
         logger.error(f"Transaction confirmation failed: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Confirmation failed")
+        raise HTTPException(status_code=500, detail=f"Confirmation failed: {str(e)}")
