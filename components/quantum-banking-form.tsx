@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Lock, Shield, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react"
 
@@ -88,19 +90,26 @@ export default function QuantumBankingForm() {
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-gradient-to-br from-[#2d1b4e] to-[#1f1540] border border-[#4a3f7e] rounded-3xl p-8 shadow-2xl">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-3xl p-8 shadow-2xl">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Lock className="w-8 h-8 text-cyan-400" />
-            <h1 className="text-3xl font-bold text-cyan-400">Quantum-Safe Banking</h1>
+            <Lock className="w-8 h-8" style={{ color: "#DC143C" }} />
+            <h1 className="text-3xl font-bold" style={{ color: "#DC143C" }}>
+              Quantum-Safe Banking
+            </h1>
           </div>
           <p className="text-gray-400 text-sm">Secure Money Transfer System</p>
         </div>
 
         <div className="flex justify-center mb-8">
-          <div className="border border-cyan-400 bg-cyan-400/5 rounded-full px-4 py-2 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-cyan-400" />
-            <span className="text-cyan-400 text-sm font-medium">Protected by CRYSTALS-Kyber & Dilithium</span>
+          <div
+            className="border rounded-full px-4 py-2 flex items-center gap-2"
+            style={{ borderColor: "#00A651", backgroundColor: "rgba(0, 166, 81, 0.05)" }}
+          >
+            <Shield className="w-4 h-4" style={{ color: "#00A651" }} />
+            <span className="text-sm font-medium" style={{ color: "#00A651" }}>
+              Protected by CRYSTALS-Kyber & Dilithium
+            </span>
           </div>
         </div>
 
@@ -110,11 +119,14 @@ export default function QuantumBankingForm() {
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                   index < stepIndex
-                    ? "bg-cyan-400 text-white"
+                    ? "text-white border border-gray-600"
                     : index === stepIndex
-                      ? "bg-cyan-400 text-white ring-2 ring-cyan-400/30"
+                      ? "ring-2"
                       : "bg-gray-500/20 text-gray-400 border border-gray-500/40"
                 }`}
+                style={
+                  index < stepIndex || index === stepIndex ? { backgroundColor: "#DC143C", borderColor: "#DC143C" } : {}
+                }
               >
                 {index < stepIndex ? "✓" : index + 1}
               </div>
@@ -122,8 +134,9 @@ export default function QuantumBankingForm() {
               {index < steps.length - 1 && (
                 <div
                   className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                    index < stepIndex ? "bg-red-500" : "bg-gray-500/20"
+                    index < stepIndex ? "bg-gray-500/20" : "bg-gray-500/20"
                   }`}
+                  style={index < stepIndex ? { backgroundColor: "#DC143C" } : {}}
                 />
               )}
 
@@ -137,9 +150,8 @@ export default function QuantumBankingForm() {
           {steps.map((step, index) => (
             <div key={`label-${step.key}`} className="flex-1 text-center">
               <span
-                className={`text-xs font-medium transition-colors ${
-                  index <= stepIndex ? "text-cyan-400" : "text-gray-400"
-                }`}
+                className="text-xs font-medium transition-colors"
+                style={{ color: index <= stepIndex ? "#DC143C" : "#9CA3AF" }}
               >
                 {step.label}
               </span>
@@ -147,11 +159,16 @@ export default function QuantumBankingForm() {
           ))}
         </div>
 
-        <div className="bg-teal-500/10 border border-teal-500/30 rounded-lg p-4 mb-8">
+        <div
+          className="rounded-lg p-4 mb-8"
+          style={{ backgroundColor: "rgba(0, 166, 81, 0.1)", border: "1px solid rgba(0, 166, 81, 0.3)" }}
+        >
           <div className="flex items-start gap-3">
-            <Lock className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
+            <Lock className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#00A651" }} />
             <div>
-              <p className="text-teal-400 font-semibold text-sm">Quantum Security:</p>
+              <p className="font-semibold text-sm" style={{ color: "#00A651" }}>
+                Quantum Security:
+              </p>
               <p className="text-gray-300 text-sm">
                 All transactions are encrypted using NIST-approved post-quantum algorithms resistant to quantum
                 computing attacks.
@@ -184,7 +201,10 @@ export default function QuantumBankingForm() {
                 placeholder="John Doe"
                 value={receiverName}
                 onChange={(e) => setReceiverName(e.target.value)}
-                className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-all"
+                style={{ "--tw-ring-color": "#DC143C" } as React.CSSProperties}
+                onFocus={(e) => (e.target.style.borderColor = "#DC143C")}
+                onBlur={(e) => (e.target.style.borderColor = "")}
               />
             </div>
 
@@ -197,7 +217,8 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-90"
+                style={{ backgroundColor: "#DC143C" }}
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -215,7 +236,8 @@ export default function QuantumBankingForm() {
                 <select
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-1 transition-all"
+                  style={{ "--tw-ring-color": "#DC143C" } as React.CSSProperties}
                 >
                   <option value="national">National Bank</option>
                   <option value="himalayan">Himalayan Bank</option>
@@ -229,7 +251,9 @@ export default function QuantumBankingForm() {
                   placeholder="1234567890"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                  className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-all"
+                  onFocus={(e) => (e.target.style.borderColor = "#DC143C")}
+                  onBlur={(e) => (e.target.style.borderColor = "")}
                 />
               </div>
             </div>
@@ -243,7 +267,8 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-90"
+                style={{ backgroundColor: "#DC143C" }}
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -262,7 +287,9 @@ export default function QuantumBankingForm() {
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                className="w-full bg-gray-700/30 border border-gray-600/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-all"
+                onFocus={(e) => (e.target.style.borderColor = "#DC143C")}
+                onBlur={(e) => (e.target.style.borderColor = "")}
               />
             </div>
 
@@ -275,7 +302,8 @@ export default function QuantumBankingForm() {
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-90"
+                style={{ backgroundColor: "#DC143C" }}
               >
                 NEXT
                 <ChevronRight className="w-4 h-4" />
@@ -290,15 +318,19 @@ export default function QuantumBankingForm() {
             <div className="bg-gray-700/20 border border-gray-600/50 rounded-lg p-6 space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
                 <span className="text-gray-400">Receiver Name:</span>
-                <span className="text-cyan-400 font-semibold">{receiverName}</span>
+                <span className="font-semibold" style={{ color: "#DC143C" }}>
+                  {receiverName}
+                </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
                 <span className="text-gray-400">Account Number:</span>
-                <span className="text-cyan-400 font-semibold">{accountNumber}</span>
+                <span className="font-semibold" style={{ color: "#DC143C" }}>
+                  {accountNumber}
+                </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-gray-400">Amount:</span>
-                <span className="text-cyan-400 font-bold text-lg">
+                <span className="font-bold text-lg" style={{ color: "#DC143C" }}>
                   NPR{" "}
                   {Number.parseFloat(amount).toLocaleString("en-US", {
                     minimumFractionDigits: 2,
@@ -318,7 +350,8 @@ export default function QuantumBankingForm() {
               <button
                 onClick={handleNext}
                 disabled={submitting}
-                className="flex-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold py-3 rounded-lg hover:from-cyan-300 hover:to-blue-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:opacity-90"
+                style={{ backgroundColor: "#DC143C" }}
               >
                 {submitting ? "Processing..." : "CONFIRM"}
                 {!submitting && <ChevronRight className="w-4 h-4" />}

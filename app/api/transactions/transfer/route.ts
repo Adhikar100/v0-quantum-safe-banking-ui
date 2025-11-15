@@ -1,4 +1,5 @@
 import crypto from "crypto"
+import { neon } from "@neondatabase/serverless"
 
 interface TransferRequest {
   receiver_name: string
@@ -92,6 +93,35 @@ export async function POST(request: Request) {
 
     // Encrypt transaction using Kyber (simulated)
     const encrypted = encryptTransactionData(transactionData)
+
+    try {
+      const sql = neon(process.env.DATABASE_URL || "")
+      await sql`
+        INSERT INTO transactions (
+          transaction_id,
+          receiver_name,
+          receiver_account,
+          amount,
+          description,
+          encrypted_data,
+          signature,
+          status
+        ) VALUES (
+          ${transactionId},
+          ${body.receiver_name},
+          ${body.receiver_account},
+          ${body.amount},
+          ${body.description || "Quantum-safe transfer"},
+          ${encrypted},
+          ${signature},
+          'completed'
+        )
+      `
+      console.log("[v0] API Route: Transaction saved to database")
+    } catch (dbError) {
+      console.log("[v0] API Route: Database save error (non-blocking):", dbError)
+      // Don't fail the transaction if database save fails
+    }
 
     console.log("[v0] API Route: Transaction processed successfully")
     console.log("[v0] API Route: Transaction ID:", transactionId)
