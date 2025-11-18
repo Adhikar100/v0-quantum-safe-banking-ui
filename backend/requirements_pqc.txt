@@ -1,0 +1,13 @@
+# CRYSTALS-Kyber and Dilithium Dependencies
+
+# Production PQC (recommended)
+liboqs-python>=0.8.0
+
+# Cryptography support
+cryptography>=41.0.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Additional utilities
+python-dotenv>=1.0.0

@@ -1,0 +1,4 @@
+# PQC Optimization Framework Requirements
+oqs>=0.7.2  # liboqs Python wrapper (production PQC)
+numpy>=1.24.0  # Statistical analysis
+matplotlib>=3.7.0  # Visualization (optional)
